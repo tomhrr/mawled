@@ -1,8 +1,8 @@
 ## mawled
 
-mawled is a basic X11 tiling window manager, similar to and inspired
-by xmonad, though with fewer features.  It serves mainly as an example
-project for [Dale](https://github.com/tomhrr/dale).
+mawled is a basic X11 tiling window manager, inspired by xmonad,
+though with fewer features.  It serves mainly as an example project
+for [Dale](https://github.com/tomhrr/dale).
 
 ### Setup
 

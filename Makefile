@@ -11,6 +11,3 @@ xlib:
 
 clean:
 	rm -f mawled && rm *.so && rm *.bc && rm *.dtm
-
-test:
-	prove -b

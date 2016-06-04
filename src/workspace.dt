@@ -1,0 +1,477 @@
+(module workspace)
+
+(import cstdio)
+(import macros)
+(import concepts)
+(import algorithms)
+(import derivations)
+(import map)
+(import vector)
+(import list)
+(import unistd)
+(import x11-xlib)
+
+(using-namespace x11
+
+(std.concepts.instantiate Map (Window) (Window))
+(std.concepts.instantiate List (Window))
+
+(std.concepts.instantiate find (Iterator (List (Window))))
+
+(def = (fn intern bool ((a (p (List (Window))))
+                        (b (p (List (Window)))))
+  (p= a b)))
+(def < (fn intern bool ((a (p (List (Window))))
+                        (b (p (List (Window)))))
+  (p< a b)))
+
+(std.concepts.implement Type (p (List (Window))))
+(mfor op (!= > >= <= swap)
+  (std.concepts.instantiate op (p (List (Window)))))
+(mfor cn (EqualityComparable LessThanComparable Swappable)
+  (std.concepts.implement cn (p (List (Window)))))
+(std.concepts.instantiate List (p (List (Window))))
+
+(def Mode (enum extern int (fullscreen vertical horizontal)))
+
+(def Workspace
+  (struct extern
+    ((dpy     (p Display))
+     (root    (Window))
+     (mode    Mode)
+     (windows (p (List (Window))))
+     (tabmap  (p (Map (Window) (Window)))))))
+
+(def = (fn extern bool ((a (ref (const Workspace)))
+                        (b (ref (const Workspace))))
+  (= (@:@ a root) (@:@ b root))))
+(def < (fn extern bool ((a (ref (const Workspace)))
+                        (b (ref (const Workspace))))
+  (< (@:@ a root) (@:@ b root))))
+
+(std.concepts.implement Type Workspace)
+(mfor op (!= > >= <= swap)
+  (std.concepts.instantiate op Workspace))
+(mfor cn (EqualityComparable LessThanComparable Swappable)
+  (std.concepts.implement cn Workspace))
+(std.concepts.instantiate List Workspace)
+
+(def get-principal
+  (fn extern (Window) ((ws (p Workspace)))
+    (let ((windows \ (@:@ ws windows)))
+      (if (empty (@ windows))
+          no-window
+          (@ (front (@ windows)))))))
+
+(def get-focus
+  (fn extern (Window) ((ws (p Workspace)))
+    (let ((focus-return (Window))
+          (revert-to-return int))
+      (get-input-focus (@:@ ws dpy) (# focus-return) (# revert-to-return))
+      focus-return)))
+
+(def get-display
+  (fn extern (p Display) ((ws (p Workspace)))
+    (@:@ ws dpy)))
+
+(def has-window
+  (fn extern bool ((ws (p Workspace)) (window (Window)))
+    (let ((windows \ (@:@ ws windows))
+          (iter \ (find (begin (@ windows))
+                        (end (@ windows))
+                        window)))
+      (!= iter (end (@ windows))))))
+
+(def unset-focus
+  (fn extern void ((ws (p Workspace)) (window (Window)))
+    (and (not (has-window ws window))
+      (do (fprintf stderr
+                   "Unsetting focus from non-existent window %lu!\n"
+                   window)
+          (abort)
+          true))
+    (let ((window-changes WindowChanges)
+          (display \ (get-display ws)))
+      (set-window-border display window (white-pixel display))
+      (setf (: window-changes border-width) 1)
+      (configure-window display window cw-border-width
+                        (# window-changes)))
+    (return)))
+
+(def set-focus
+  (fn extern void ((ws (p Workspace)) (window (Window)) (prev-window (Window)))
+    (and (= window prev-window)
+      (return))
+    (and (= window no-window)
+      (do (setv window (@:@ ws root)) true))
+    (let ((window-changes WindowChanges)
+          (display \ (get-display ws)))
+      (set-input-focus display window revert-to-none current-time)
+      (raise-window display window)
+      (set-window-border display window (black-pixel display))
+      (setf (: window-changes border-width) 1)
+      (configure-window display window cw-border-width
+                        (# window-changes))
+      (and (or (= prev-window no-window)
+           (or (= prev-window (@:@ ws root))
+               (= prev-window (cast 1 (Window)))))
+        (return))
+      (unset-focus ws prev-window))
+    (return)))
+
+(def set-focus-principal
+  (fn extern void ((ws (p Workspace)))
+    (set-focus ws (get-principal ws) (get-focus ws))))
+
+(def regenerate-tabmap
+  (fn intern void ((ws (p Workspace)))
+    (clear (@ (@:@ ws tabmap)))
+    (let ((windows \ (@:@ ws windows)))
+      (and (empty (@ windows))
+        (return))
+      (let ((i \ 0)
+            (b \ (begin (@ windows)))
+            (e \ (end (@ windows))))
+        (for true (!= b e) (setv b (successor b))
+          (let ((next \ (if (= (successor b) e)
+                            (begin (@ windows))
+                            (successor b))))
+            (insert (@ (@:@ ws tabmap)) (@ (source b)) (@ (source next)))))))
+    (return)))
+
+(def add-window
+  (fn extern void ((ws (p Workspace)) (window (Window)))
+    (and (has-window ws window)
+      (do (fprintf stderr "Workspace already has window %lu!\n"
+                   window)
+          (abort)
+          true))
+    (push-front (@ (@:@ ws windows)) window)
+    (regenerate-tabmap ws)
+    (return)))
+
+(def add-window-to-back
+  (fn extern void ((ws (p Workspace)) (window (Window)))
+    (and (has-window ws window)
+      (do (fprintf stderr "Workspace already has window %lu!\n"
+                   window)
+          (abort)
+          true))
+    (push-back (@ (@:@ ws windows)) window)
+    (regenerate-tabmap ws)
+    (return)))
+
+(def get-next-window
+  (fn extern (Window) ((ws (p Workspace)) (window (Window)))
+    (let ((tabmap \ (@:@ ws tabmap)))
+      (and (empty (@ tabmap))
+        (return no-window))
+      (let ((next \ (find (@ tabmap) window)))
+        (if (= next (end (@ tabmap)))
+            no-window
+            (@:@ (source next) second))))))
+
+(def set-principal
+  (fn extern void ((ws (p Workspace)) (window (Window)))
+    (let ((current-principal \ (get-principal ws)))
+      (and (= window current-principal)
+        (return))
+      (let ((windows \ (@:@ ws windows))
+            (iter \ (find (begin (@ windows))
+                          (end (@ windows))
+                          window)))
+        (and (= iter (end (@ windows)))
+          (do (fprintf stderr "Trying to set principal, but not in list!\n")
+              (abort)
+              true))
+        (swap (@ (source iter)) (@ (source (begin (@ windows)))))
+        (regenerate-tabmap ws)))
+    (return)))
+
+(def set-principal-focus
+  (fn extern void ((ws (p Workspace)))
+    (set-principal ws (get-focus ws))))
+
+(def focus-prev-window
+  (fn extern void ((ws (p Workspace)))
+    (and (empty (@ (@:@ ws windows)))
+      (return))
+
+    (def window (var auto (Window) (get-focus ws)))
+    (and (= no-window window)
+      (do (set-focus ws (get-principal ws) no-window)
+          (return)))
+
+    (let ((mp \ (@:@ ws tabmap))
+          (b  \ (begin (@ mp)))
+          (e  \ (end   (@ mp))))
+      (for true (!= b e) (setv b (successor b))
+        (and (= (@:@ (source b) second) window)
+          (do (set-focus ws (@:@ (source b) first) (get-focus ws))
+              (return)))))
+
+    (and (= window (@:@ ws root))
+      (do (setv window (@:@ (source (begin (@ (@:@ ws tabmap)))) second))
+          (set-focus ws window (get-focus ws))
+          (return)))
+
+    (fprintf stderr "Unable to find window back from %lu!\n" window)
+    (abort)))
+
+(def focus-second-window
+  (fn extern void ((ws (p Workspace)))
+    (let ((window \ (@:@ (source (begin (@ (@:@ ws tabmap)))) second)))
+      (set-focus ws window (get-focus ws))
+      (return))))
+
+(def focus-next-window
+  (fn extern void ((ws (p Workspace)) (from-window (Window)))
+    (let ((next \ (get-next-window ws from-window)))
+      (if (= next no-window)
+          (if (= from-window (@:@ ws root))
+              (do (focus-second-window ws)
+                  (return))
+          (if (= from-window no-window)
+              (return)
+              (do (fprintf stderr "Unable to find window from %lu! Aborting!\n"
+                           from-window)
+                  (abort)
+                  0)))
+          (do (set-focus ws next (get-focus ws))
+              0)))
+    (return)))
+
+(def focus-next-window
+  (fn extern void ((ws (p Workspace)))
+    (focus-next-window ws (get-focus ws))))
+
+(def remove-window
+  (fn extern void ((ws (p Workspace)) (window (Window)))
+    (let ((windows \ (@:@ ws windows))
+          (iter \ (find (begin (@ windows))
+                        (end (@ windows))
+                        window)))
+      (and (= iter (end (@ windows)))
+        (do (fprintf stderr "Removing non-existent window!\n")
+            (abort)
+            true))
+      (and (!= (cast 1 size) (size (@ windows)))
+        (do (focus-next-window ws window) true))
+      (erase (@ windows) iter)
+      (regenerate-tabmap ws)
+      (and (empty (@ (@:@ ws windows)))
+        (do (set-input-focus (get-display ws)
+                             (@:@ ws root)
+                             revert-to-none current-time)
+            true)))
+    (return)))
+
+(def remove-window-nofocus
+  (fn extern void ((ws (p Workspace)) (window (Window)))
+    (let ((windows \ (@:@ ws windows))
+          (iter \ (find (begin (@ windows))
+                        (end (@ windows))
+                        window)))
+      (and (= iter (end (@ windows)))
+        (do (fprintf stderr "Removing non-existent window!\n")
+            (abort)
+            true))
+      (erase (@ windows) iter)
+      (regenerate-tabmap ws))
+    (return)))
+
+(def get-width-and-height
+  (fn extern void ((ws (p Workspace))
+                   (width-return (p uint))
+                   (height-return (p uint)))
+    (let ((x-return            int)
+          (y-return            int)
+          (root-return         (Window))
+          (border-width-return uint)
+          (depth-return        uint))
+      (get-geometry (@:@ ws dpy) (@:@ ws root) (# root-return)
+                    (# x-return) (# y-return) width-return
+                    height-return (# border-width-return)
+                    (# depth-return)))
+    (return)))
+
+(def draw-fullscreen
+  (fn extern void ((ws (p Workspace)))
+    (and (empty (@ (@:@ ws windows)))
+      (return))
+    (def width-return (var auto uint))
+    (def height-return (var auto uint))
+    (get-width-and-height ws (# width-return) (# height-return))
+    (let ((windows \ (@:@ ws windows))
+          (b \ (begin (@ windows)))
+          (e \ (end (@ windows))))
+      (for true (!= b e) (setv b (successor b))
+        (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+                            (- width-return (cast 2 uint))
+                            (- height-return (cast 2 uint)))))
+    (return)))
+
+(def %
+  (fn extern uint ((a uint) (b uint))
+    (let ((div \ (/ a b)))
+      (- a (* div b)))))
+
+(def /
+  (fn extern uint ((a uint) (b int))
+    (/ a (cast b uint))))
+
+(def draw-vertical
+  (fn extern void ((ws (p Workspace)))
+    (and (empty (@ (@:@ ws windows)))
+      (return))
+    (def width-return (var auto uint))
+    (def height-return (var auto uint))
+    (get-width-and-height ws (# width-return) (# height-return))
+    (let ((windows \ (@:@ ws windows))
+          (b \ (begin (@ windows)))
+          (e \ (end (@ windows)))
+          (count \ (size (@ windows))))
+      (if (= count (cast 1 size))
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+                                  (- width-return (cast 2 uint))
+                                  (- height-return (cast 2 uint)))
+              0)
+      (if (= count (cast 2 size))
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+                                  (- (/ width-return 2) (cast 2 uint))
+                                  (- height-return (cast 2 uint)))
+              (move-resize-window (@:@ ws dpy) (@ (source (successor b)))
+                                  (+ (cast (/ width-return 2) int) 1) 1
+                                  (- (/ width-return 2) (cast 2 uint))
+                                  (- height-return (cast 2 uint)))
+              0)
+          (do
+            (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+                                (- (/ width-return 2) (cast 2 uint))
+                                (- height-return (cast 2 uint)))
+            (setv b (successor b))
+            (let ((i \ 0)
+                  (c \ (cast (- (cast count int) 1) uint))
+                  (height \ (/ height-return c))
+                  (leftover \ (% height c)))
+              (for true (!= b e) (do (setv b (successor b)) (incv i))
+                (move-resize-window (@:@ ws dpy) (@ (source b))
+                                    (+ (cast (/ width-return 2) int) 1)
+                                    (+ (cast (* height (cast i uint)) int) 1)
+                                    (- (/ width-return 2) (cast 2 uint))
+                                    (- (+ height
+                                          (if (= (cast i uint) c)
+                                              leftover
+                                              (cast 0 uint)))
+                                        (cast 2 uint)))))))))
+    (return)))
+
+(def draw-horizontal
+  (fn extern void ((ws (p Workspace)))
+    (and (empty (@ (@:@ ws windows)))
+      (return))
+    (def width-return (var auto uint))
+    (def height-return (var auto uint))
+    (get-width-and-height ws (# width-return) (# height-return))
+    (let ((windows \ (@:@ ws windows))
+          (b \ (begin (@ windows)))
+          (e \ (end (@ windows)))
+          (count \ (size (@ windows))))
+      (if (= count (cast 1 size))
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+                                  (- width-return (cast 2 uint))
+                                  (- height-return (cast 2 uint)))
+              0)
+      (if (= count (cast 2 size))
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+                                  (- width-return (cast 2 uint))
+                                  (- (/ height-return 2) (cast 2 uint)))
+              (move-resize-window (@:@ ws dpy) (@ (source (successor b))) 1
+                                  (+ (cast (/ height-return 2) int) 1)
+                                  (- width-return (cast 2 uint))
+                                  (- (/ height-return 2) (cast 2 uint)))
+              0)
+          (do
+            (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+                                (- width-return (cast 2 uint))
+                                (- (/ height-return 2) (cast 2 uint)))
+            (setv b (successor b))
+            (let ((i \ 0)
+                  (c \ (cast (- (cast count int) 1) uint))
+                  (width \ (/ width-return c))
+                  (leftover \ (% width c)))
+              (for true (!= b e) (do (setv b (successor b)) (incv i))
+                (move-resize-window (@:@ ws dpy) (@ (source b))
+                                    (+ (cast (* width (cast i uint)) int) 1)
+                                    (+ (cast (/ height-return 2) int) 1)
+                                    (- (+ width
+                                          (if (= (cast i uint)
+                                                 (- c (cast 1 uint)))
+                                              leftover
+                                              (cast 0 uint)))
+                                       (cast 2 uint))
+                                    (- (/ height-return 2) (cast 2 uint)))))))))
+    (return)))
+
+(def draw
+  (fn extern void ((ws (p Workspace)))
+    (let ((mode \ (@:@ ws mode)))
+      (if (= mode (Mode fullscreen))
+          (do (draw-fullscreen ws) 0)
+      (if (= mode (Mode vertical))
+          (do (draw-vertical ws) 0)
+          (do (draw-horizontal ws) 0))))
+    (return)))
+
+(def map-workspace
+  (fn extern void ((ws (p Workspace)))
+    (let ((vp \ (@:@ ws windows))
+          (b \ (begin (@ vp)))
+          (e \ (end (@ vp))))
+      (for true (!= b e) (setv b (successor b))
+        (map-window (@:@ ws dpy) (@ (source b)))))
+    (return)))
+
+(def unmap-workspace
+  (fn extern void ((ws (p Workspace)))
+    (let ((vp \ (@:@ ws windows))
+          (b \ (begin (@ vp)))
+          (e \ (end (@ vp))))
+      (for true (!= b e) (setv b (successor b))
+        (unmap-window (@:@ ws dpy) (@ (source b)))))
+    (return)))
+
+(def move-focus
+  (fn extern void ((ws (p Workspace))
+                   (target-ws  (p Workspace)))
+    (and (p= ws target-ws)
+      (return))
+
+    (def window (var auto (Window) (get-focus ws)))
+    (and (or (= window (@:@ ws root))
+             (= window no-window))
+      (return))
+
+    (unset-focus ws window)
+
+    (add-window-to-back target-ws window)
+
+    (def next (var auto \ (find (@ (@:@ ws tabmap)) window)))
+    (def repl (var auto \
+        (if (= next (end (@ (@:@ ws tabmap))))
+            no-window
+            (@:@ (source next) second))))
+    (and (= window (get-principal ws))
+      (do (set-principal ws repl) true))
+
+    (remove-window ws (get-focus ws))
+
+    (and (= no-window (get-principal target-ws))
+      (do (set-principal target-ws window) true))
+
+    (unmap-window (@:@ ws dpy) window)
+
+    (draw ws)
+    (and (not (empty (@ (@:@ ws windows))))
+      (do (focus-next-window ws) true))
+    (return))))

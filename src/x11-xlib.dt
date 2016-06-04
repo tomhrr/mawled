@@ -1,0 +1,578 @@
+(module x11-xlib)
+
+(import macros)
+(import derivations)
+
+(namespace x11
+  (def Window      (macro extern (void) (q uint64)))
+  (def Colormap    (macro extern (void) (q uint64)))
+  (def ValueMask   (macro extern (void) (q uint64)))
+  (def BorderPixel (macro extern (void) (q uint64)))
+  (def InputMask   (macro extern (void) (q int64)))
+  (def Cursor      (macro extern (void) (q uint64)))
+  (def Time        (macro extern (void) (q uint64)))
+
+  (def Screen (struct extern
+    ((_unused (array-of 16 uint8))
+     (root (Window))
+     (width int)
+     (height int)
+     (mwidth int)
+     (mheight int)
+     (ndepths int)
+     (depths (p void))
+     (root-depth int)
+     (root-visual (p void))
+     (gc (p void))
+     (colormap (Colormap))
+     (white-pixel (BorderPixel))
+     (black-pixel (BorderPixel))
+     (max-maps int)
+     (min-maps int)
+     (backing-store int)
+     (save-unders int)
+     (root-input-mask (InputMask)))))
+
+  (def Display (struct extern
+    ((_unused (array-of 224 uint8))
+     (default-screen int)
+     (nscreens int)
+     (screens (p Screen))
+     (_unused2 (array-of 4440 uint8)))))
+
+
+  (def WindowAttributes (struct extern
+    ((x int)
+     (y int)
+     (width int)
+     (height int)
+     (border-width int)
+     (depth int)
+     (visual (p void))
+     (root (Window))
+     (class int)
+     (bit-gravity int)
+     (win-gravity int)
+     (backing-store int)
+     (backing-planes uint64)
+     (backing-pixel uint64)
+     (save-under int)
+     (colormap (Colormap))
+     (map-installed int)
+     (map-state int)
+     (all-event-masks int64)
+     (your-event-mask int64)
+     (do-not-propagate-mask int64)
+     (override-redirect int)
+     (screen (p Screen)))))
+
+  (def ButtonEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (window (Window))
+     (root (Window))
+     (subwindow (Window))
+     (time (Time))
+     (x int)
+     (y int)
+     (x-root int)
+     (y-root int)
+     (state uint)
+     (button uint)
+     (same-screen int))))
+
+  (def EnterWindowEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (window (Window))
+     (root (Window))
+     (subwindow (Window))
+     (time (Time))
+     (x int)
+     (y int)
+     (x-root int)
+     (y-root int)
+     (mode int)
+     (detail int)
+     (same-screen int)
+     (focus int)
+     (state uint))))
+
+  (def KeyEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (window (Window))
+     (root (Window))
+     (subwindow (Window))
+     (time (Time))
+     (x int)
+     (y int)
+     (x-root int)
+     (y-root int)
+     (state uint)
+     (keycode uint)
+     (same-screen int))))
+
+  (def MotionEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (window (Window))
+     (root (Window))
+     (subwindow (Window))
+     (time (Time))
+     (x int)
+     (y int)
+     (x-root int)
+     (y-root int)
+     (state uint)
+     (is-hint char)
+     (same-screen int))))
+
+  (def CreateWindowEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (parent (Window))
+     (window (Window))
+     (x int)
+     (y int)
+     (width int)
+     (height int)
+     (border-width int)
+     (override-redirect int))))
+
+  (def DestroyWindowEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (event (Window))
+     (window (Window)))))
+
+  (def FocusChangeEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (window (Window))
+     (mode int)
+     (detail int))))
+
+  (def MapEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (event (Window))
+     (window (Window))
+     (override-redirect int))))
+
+  (def MapRequestEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (event (Window))
+     (window (Window)))))
+
+  (def ConfigureRequestEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (parent (Window))
+     (window (Window))
+     (x int)
+     (y int)
+     (width int)
+     (height int)
+     (border-width int)
+     (above (Window))
+     (detail int)
+     (value-mask (ValueMask)))))
+
+  (def WindowChanges (struct extern
+    ((x int)
+     (y int)
+     (width int)
+     (height int)
+     (border-width int)
+     (sibling (Window))
+     (stack-mode int))))
+
+  (def AnyEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (window (Window)))))
+
+  (def Event (struct extern
+    ((type int)
+     (_unused (array-of 188 char))))))
+
+(using-namespace x11
+
+(def XOpenDisplay
+  (fn extern-c (p Display) ((n (p (const char))))))
+(def XStringToKeysym
+  (fn extern-c uint ((str (p (const char))))))
+(def XKeysymToKeycode
+  (fn extern-c uint ((dpy (p Display))
+                     (keysym uint))))
+(def XGrabKey
+  (fn extern-c void ((dpy (p Display))
+                     (keycode (const uint))
+                     (modifiers (const uint))
+                     (grab-window (Window))
+                     (owner-events (const int))
+                     (pointer-mode (const int))
+                     (keyboard-mode (const int)))))
+(def XGrabButton
+  (fn extern-c void ((dpy (p Display))
+                     (button int)
+                     (modifiers (const uint))
+                     (grab-window (Window))
+                     (owner-events (const int))
+                     (event-mask (const uint))
+                     (pointer-mode (const int))
+                     (keyboard-mode (const int))
+                     (confine-to (Window))
+                     (cursor (Cursor)))))
+(def XGrabPointer
+  (fn extern-c void ((dpy (p Display))
+                     (grab-window (Window))
+                     (owner-events (const int))
+                     (event-mask (const uint))
+                     (pointer-mode (const int))
+                     (keyboard-mode (const int))
+                     (confine-to (Window))
+                     (cursor (Cursor))
+                     (time (const (Time))))))
+(def XCheckTypedEvent
+  (fn extern-c bool ((dpy (p Display))
+                     (event-type int)
+                     (event-return (p Event)))))
+(def XMoveResizeWindow
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window))
+                     (x int)
+                     (y int)
+                     (width uint)
+                     (height uint))))
+(def XRaiseWindow
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window)))))
+(def XLowerWindow
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window)))))
+(def XGetWindowAttributes
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window))
+                     (window-attributes-return (p WindowAttributes)))))
+(def XNextEvent
+  (fn extern-c void ((dpy (p Display))
+                     (event-return (p Event)))))
+(def XSelectInput
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window))
+                     (event-mask (const uint)))))
+(def XUngrabPointer
+  (fn extern-c int ((dpy (p Display))
+                     (time (Time)))))
+(def XQueryTree
+  (fn extern-c int ((dpy (p Display))
+                    (w (Window))
+                    (root-return (p (Window)))
+                    (parent-return (p (Window)))
+                    (children-return (p (p (Window))))
+                    (nchildren-return (p uint)))))
+(def XDestroyWindow
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window)))))
+(def XSetInputFocus
+  (fn extern-c void ((dpy (p Display))
+                     (focus (Window))
+                     (revert-to int)
+                     (time (Time)))))
+(def XGetInputFocus
+  (fn extern-c void ((dpy (p Display))
+                     (focus-return (p (Window)))
+                     (revert-to-return (p int)))))
+(def XSetWindowBorder
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window))
+                     (border-pixel (BorderPixel)))))
+(def XConfigureWindow
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window))
+                     (value-mask (ValueMask))
+                     (values (p WindowChanges)))))
+(def XGetGeometry
+  (fn extern-c int ((dpy (p Display))
+                    (d (Window))
+                    (root-return (p (Window)))
+                    (x-return (p int))
+                    (y-return (p int))
+                    (width-return (p uint))
+                    (height-return (p uint))
+                    (border-width-return (p uint))
+                    (depth-return (p uint)))))
+(def XMapWindow
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window)))))
+(def XUnmapWindow
+  (fn extern-c void ((dpy (p Display))
+                     (w (Window))))))
+
+(namespace x11
+  (def shift-mask          (var extern (const uint) (cast (<< 1 0) uint)))
+  (def mod1-mask           (var extern (const uint) (cast (<< 1 3) uint)))
+
+  (def button-press-mask   (var extern (const uint) (cast (<< 1 2) uint)))
+  (def button-release-mask (var extern (const uint) (cast (<< 1 3) uint)))
+  (def enter-window-mask   (var extern (const uint) (cast (<< 1 4) uint)))
+  (def leave-window-mask   (var extern (const uint) (cast (<< 1 5) uint)))
+  (def pointer-motion-mask (var extern (const uint) (cast (<< 1 6) uint)))
+
+  (def substructure-notify-mask   (var extern (const uint) (cast (<< 1 19) uint)))
+  (def substructure-redirect-mask (var extern (const uint) (cast (<< 1 20) uint)))
+  (def focus-change-mask          (var extern (const uint) (cast (<< 1 21) uint)))
+
+  (def grab-mode-async   (var extern (const int)    1))
+  (def owner-events-true (var extern (const int)    1))
+  (def current-time      (var extern (const uint64) 0))
+
+  (def key-press         (var extern (const int) 2))
+  (def button-press      (var extern (const int) 4))
+  (def button-release    (var extern (const int) 5))
+  (def motion-notify     (var extern (const int) 6))
+  (def enter-notify      (var extern (const int) 7))
+  (def leave-notify      (var extern (const int) 8))
+  (def focus-in          (var extern (const int) 9))
+  (def focus-out         (var extern (const int) 10))
+  (def create-notify     (var extern (const int) 16))
+  (def destroy-notify    (var extern (const int) 17))
+  (def map-notify        (var extern (const int) 19))
+  (def map-request       (var extern (const int) 20))
+  (def configure-request (var extern (const int) 23))
+
+  (def above            (var extern (const int) 0))
+  (def below            (var extern (const int) 1))
+  (def top-if           (var extern (const int) 2))
+  (def bottom-if        (var extern (const int) 3))
+  (def opposite         (var extern (const int) 4))
+
+  (def cw-x (var extern (const (ValueMask)) (cast (<< 1 0) (ValueMask))))
+  (def cw-y (var extern (const (ValueMask)) (cast (<< 1 1) (ValueMask))))
+  (def cw-width (var extern (const (ValueMask)) (cast (<< 1 2) (ValueMask))))
+  (def cw-height (var extern (const (ValueMask)) (cast (<< 1 3) (ValueMask))))
+  (def cw-border-width (var extern (const (ValueMask)) (cast (<< 1 4) (ValueMask))))
+  (def cw-sibling (var extern (const (ValueMask)) (cast (<< 1 5) (ValueMask))))
+  (def cw-stack-mode (var extern (const (ValueMask)) (cast (<< 1 6) (ValueMask))))
+
+  (def none              (var extern (const int) 0))
+  (def no-window         (var extern (Window)    0))
+  (def no-cursor         (var extern (Cursor)    0))
+
+  (def revert-to-none         (var extern (const int) 0))
+  (def revert-to-pointer-root (var extern (const int) 1))
+  (def revert-to-parent       (var extern (const int) 2))
+
+  (def is-unmapped   (var extern (const int) 0))
+  (def is-unviewable (var extern (const int) 1))
+  (def is-viewable   (var extern (const int) 2))
+
+  (def open-display
+    (fn extern (p Display) ((n (p (const char))))
+      (XOpenDisplay n)))
+
+  (def default-screen
+    (fn extern int ((dpy (p Display)))
+      (@:@ dpy default-screen)))
+
+  (def screen-of-display
+    (fn extern (p Screen) ((dpy (p Display))
+                           (scr int))
+      ($ (@:@ dpy screens) scr)))
+
+  (def default-root-window
+    (fn extern (Window) ((dpy (p Display)))
+      (@:@ (screen-of-display dpy (default-screen dpy)) root)))
+
+  (def black-pixel
+    (fn extern (BorderPixel) ((dpy (p Display)))
+      (@:@ (screen-of-display dpy (default-screen dpy)) black-pixel)))
+
+  (def white-pixel
+    (fn extern (BorderPixel) ((dpy (p Display)))
+      (@:@ (screen-of-display dpy (default-screen dpy)) white-pixel)))
+
+  (def string-to-keysym
+    (fn extern uint ((str (p (const char))))
+      (XStringToKeysym str)))
+
+  (def keysym-to-keycode
+    (fn extern uint ((dpy (p Display)) (keysym uint))
+      (XKeysymToKeycode dpy keysym)))
+
+  (def grab-key
+    (fn extern void ((dpy (p Display))
+                     (keycode (const uint))
+                     (modifiers (const uint))
+                     (grab-window (Window))
+                     (owner-events (const int))
+                     (pointer-mode (const int))
+                     (keyboard-mode (const int)))
+      (XGrabKey dpy keycode modifiers grab-window owner-events
+                pointer-mode keyboard-mode)))
+
+  (def grab-button
+    (fn extern void ((dpy (p Display))
+                     (button int)
+                     (modifiers (const uint))
+                     (grab-window (Window))
+                     (owner-events (const int))
+                     (event-mask (const uint))
+                     (pointer-mode (const int))
+                     (keyboard-mode (const int))
+                     (confine-to (Window))
+                     (cursor (Cursor)))
+      (XGrabButton dpy button modifiers grab-window owner-events
+                   event-mask pointer-mode keyboard-mode confine-to
+                   cursor)))
+
+  (def grab-pointer
+    (fn extern void ((dpy (p Display))
+                     (grab-window (Window))
+                     (owner-events (const int))
+                     (event-mask (const uint))
+                     (pointer-mode (const int))
+                     (keyboard-mode (const int))
+                     (confine-to (Window))
+                     (cursor (Cursor))
+                     (time (const (Time))))
+      (XGrabPointer dpy grab-window owner-events event-mask
+                    pointer-mode keyboard-mode confine-to cursor
+                    time)))
+
+  (def check-typed-event
+    (fn extern bool ((dpy (p Display))
+                     (event-type int)
+                     (event-return (p Event)))
+      (XCheckTypedEvent dpy event-type event-return)))
+
+  (def move-resize-window
+    (fn extern void ((dpy (p Display))
+                     (w (Window))
+                     (x int)
+                     (y int)
+                     (width uint)
+                     (height uint))
+      (XMoveResizeWindow dpy w x y width height)))
+
+  (def raise-window
+    (fn extern void ((dpy (p Display))
+                     (w (Window)))
+      (XRaiseWindow dpy w)))
+
+  (def lower-window
+    (fn extern void ((dpy (p Display))
+                     (w (Window)))
+      (XLowerWindow dpy w)))
+
+  (def get-window-attributes
+    (fn extern void ((dpy (p Display))
+                     (w (Window))
+                     (window-attributes-return (p WindowAttributes)))
+      (XGetWindowAttributes dpy w window-attributes-return)))
+
+  (def next-event
+    (fn extern void ((dpy (p Display))
+                     (event-return (p Event)))
+      (XNextEvent dpy event-return)))
+
+  (def select-input
+    (fn extern void ((dpy (p Display))
+                       (w (Window))
+                       (event-mask (const uint)))
+      (XSelectInput dpy w event-mask)))
+
+  (def set-input-focus
+    (fn extern void ((dpy (p Display))
+                       (focus (Window))
+                       (revert-to int)
+                       (time (Time)))
+      (XSetInputFocus dpy focus revert-to time)))
+
+  (def get-input-focus
+    (fn extern void ((dpy (p Display))
+                       (focus-return (p (Window)))
+                       (revert-to-return (p int)))
+      (XGetInputFocus dpy focus-return revert-to-return)))
+
+  (def query-tree
+    (fn extern int ((dpy (p Display))
+                      (w (Window))
+                      (root-return (p (Window)))
+                      (parent-return (p (Window)))
+                      (children-return (p (p (Window))))
+                      (nchildren-return (p uint)))
+      (XQueryTree dpy w root-return parent-return
+                  children-return nchildren-return)))
+
+  (def destroy-window
+    (fn extern void ((dpy (p Display))
+                     (w (Window)))
+      (XDestroyWindow dpy w)))
+
+  (def map-window
+    (fn extern void ((dpy (p Display))
+                     (w (Window)))
+      (XMapWindow dpy w)))
+
+  (def unmap-window
+    (fn extern void ((dpy (p Display))
+                     (w (Window)))
+      (XUnmapWindow dpy w)))
+
+  (def get-geometry
+    (fn extern int ((dpy (p Display))
+                    (d (Window))
+                    (root-return (p (Window)))
+                    (x-return (p int))
+                    (y-return (p int))
+                    (width-return (p uint))
+                    (height-return (p uint))
+                    (border-width-return (p uint))
+                    (depth-return (p uint)))
+      (XGetGeometry dpy d root-return x-return
+                    y-return width-return height-return
+                    border-width-return depth-return)))
+
+  (def set-window-border
+    (fn extern void ((dpy (p Display))
+                     (w (Window))
+                     (border-pixel (BorderPixel)))
+      (XSetWindowBorder dpy w border-pixel)))
+
+  (def configure-window
+    (fn extern void ((dpy (p Display))
+                     (w (Window))
+                     (value-mask (ValueMask))
+                     (values (p WindowChanges)))
+      (XConfigureWindow dpy w value-mask values)))
+
+  (def ungrab-pointer
+    (fn extern int ((dpy (p Display))
+                       (time (Time)))
+      (XUngrabPointer dpy time))))

@@ -503,30 +503,30 @@
 
   (def select-input
     (fn extern void ((dpy (p Display))
-                       (w (Window))
-                       (event-mask (const uint)))
+                     (w (Window))
+                     (event-mask (const uint)))
       (XSelectInput dpy w event-mask)))
 
   (def set-input-focus
     (fn extern void ((dpy (p Display))
-                       (focus (Window))
-                       (revert-to int)
-                       (time (Time)))
+                     (focus (Window))
+                     (revert-to int)
+                     (time (Time)))
       (XSetInputFocus dpy focus revert-to time)))
 
   (def get-input-focus
     (fn extern void ((dpy (p Display))
-                       (focus-return (p (Window)))
-                       (revert-to-return (p int)))
+                     (focus-return (p (Window)))
+                     (revert-to-return (p int)))
       (XGetInputFocus dpy focus-return revert-to-return)))
 
   (def query-tree
     (fn extern int ((dpy (p Display))
-                      (w (Window))
-                      (root-return (p (Window)))
-                      (parent-return (p (Window)))
-                      (children-return (p (p (Window))))
-                      (nchildren-return (p uint)))
+                    (w (Window))
+                    (root-return (p (Window)))
+                    (parent-return (p (Window)))
+                    (children-return (p (p (Window))))
+                    (nchildren-return (p uint)))
       (XQueryTree dpy w root-return parent-return
                   children-return nchildren-return)))
 
@@ -574,5 +574,5 @@
 
   (def ungrab-pointer
     (fn extern int ((dpy (p Display))
-                       (time (Time)))
+                    (time (Time)))
       (XUngrabPointer dpy time))))

@@ -226,6 +226,8 @@
 
 (def focus-next-window
   (fn extern void ((ws (p Workspace)) (from-window (Window)))
+    (and (empty (@ (@:@ ws windows)))
+      (return))
     (let ((next \ (get-next-window ws from-window)))
       (if (= next no-window)
           (if (= from-window (@:@ ws root))

@@ -308,7 +308,7 @@
           (b \ (begin (@ windows)))
           (e \ (end (@ windows))))
       (for true (!= b e) (setv b (successor b))
-        (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+        (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
                             (- width-return (cast 2 uint))
                             (- height-return (cast 2 uint)))))
     (return)))
@@ -334,35 +334,36 @@
           (e \ (end (@ windows)))
           (count \ (size (@ windows))))
       (if (= count (cast 1 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
                                   (- width-return (cast 2 uint))
                                   (- height-return (cast 2 uint)))
               0)
       (if (= count (cast 2 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
                                   (- (/ width-return 2) (cast 2 uint))
                                   (- height-return (cast 2 uint)))
               (move-resize-window (@:@ ws dpy) (@ (source (successor b)))
-                                  (+ (cast (/ width-return 2) int) 1) 1
+                                  (cast (/ width-return 2) int) 0
                                   (- (/ width-return 2) (cast 2 uint))
                                   (- height-return (cast 2 uint)))
               0)
           (do
-            (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+            (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
                                 (- (/ width-return 2) (cast 2 uint))
                                 (- height-return (cast 2 uint)))
             (setv b (successor b))
             (let ((i \ 0)
                   (c \ (cast (- (cast count int) 1) uint))
                   (height \ (/ height-return c))
-                  (leftover \ (% height c)))
+                  (leftover \ (% height-return c)))
               (for true (!= b e) (do (setv b (successor b)) (incv i))
                 (move-resize-window (@:@ ws dpy) (@ (source b))
-                                    (+ (cast (/ width-return 2) int) 1)
-                                    (+ (cast (* height (cast i uint)) int) 1)
+                                    (cast (/ width-return 2) int)
+                                    (cast (* height (cast i uint)) int)
                                     (- (/ width-return 2) (cast 2 uint))
                                     (- (+ height
-                                          (if (= (cast i uint) c)
+                                          (if (= (cast i uint)
+                                                 (- c (cast 1 uint)))
                                               leftover
                                               (cast 0 uint)))
                                         (cast 2 uint)))))))))
@@ -380,32 +381,32 @@
           (e \ (end (@ windows)))
           (count \ (size (@ windows))))
       (if (= count (cast 1 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
                                   (- width-return (cast 2 uint))
                                   (- height-return (cast 2 uint)))
               0)
       (if (= count (cast 2 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
                                   (- width-return (cast 2 uint))
                                   (- (/ height-return 2) (cast 2 uint)))
-              (move-resize-window (@:@ ws dpy) (@ (source (successor b))) 1
-                                  (+ (cast (/ height-return 2) int) 1)
+              (move-resize-window (@:@ ws dpy) (@ (source (successor b))) 0
+                                  (cast (/ height-return 2) int)
                                   (- width-return (cast 2 uint))
                                   (- (/ height-return 2) (cast 2 uint)))
               0)
           (do
-            (move-resize-window (@:@ ws dpy) (@ (source b)) 1 1
+            (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
                                 (- width-return (cast 2 uint))
                                 (- (/ height-return 2) (cast 2 uint)))
             (setv b (successor b))
             (let ((i \ 0)
                   (c \ (cast (- (cast count int) 1) uint))
                   (width \ (/ width-return c))
-                  (leftover \ (% width c)))
+                  (leftover \ (% width-return c)))
               (for true (!= b e) (do (setv b (successor b)) (incv i))
                 (move-resize-window (@:@ ws dpy) (@ (source b))
-                                    (+ (cast (* width (cast i uint)) int) 1)
-                                    (+ (cast (/ height-return 2) int) 1)
+                                    (cast (* width (cast i uint)) int)
+                                    (cast (/ height-return 2) int)
                                     (- (+ width
                                           (if (= (cast i uint)
                                                  (- c (cast 1 uint)))

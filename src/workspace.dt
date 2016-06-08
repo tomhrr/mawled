@@ -84,6 +84,8 @@
 
 (def unset-focus
   (fn extern void ((ws (p Workspace)) (window (Window)))
+    (and (= window pointer-root)
+      (return))
     (and (not (has-window ws window))
       (do (fprintf stderr
                    "Unsetting focus from non-existent window %lu!\n"
@@ -173,6 +175,8 @@
 
 (def set-principal
   (fn extern void ((ws (p Workspace)) (window (Window)))
+    (and (= window pointer-root)
+      (return))
     (let ((current-principal \ (get-principal ws)))
       (and (= window current-principal)
         (return))
@@ -249,6 +253,8 @@
 
 (def remove-window
   (fn extern void ((ws (p Workspace)) (window (Window)))
+    (and (= window pointer-root)
+      (return))
     (let ((windows \ (@:@ ws windows))
           (iter \ (find (begin (@ windows))
                         (end (@ windows))
@@ -452,7 +458,8 @@
 
     (def window (var auto (Window) (get-focus ws)))
     (and (or (= window (@:@ ws root))
-             (= window no-window))
+         (or (= window no-window)
+             (= window pointer-root)))
       (return))
 
     (unset-focus ws window)

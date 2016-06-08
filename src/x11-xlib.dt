@@ -382,6 +382,7 @@
 
   (def none              (var extern (const int) 0))
   (def no-window         (var extern (Window)    0))
+  (def pointer-root      (var extern (Window)    1))
   (def no-cursor         (var extern (Cursor)    0))
 
   (def revert-to-none         (var extern (const int) 0))

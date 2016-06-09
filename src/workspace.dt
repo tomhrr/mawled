@@ -443,6 +443,7 @@
 
 (def unmap-workspace
   (fn extern void ((ws (p Workspace)))
+    (unset-focus ws (get-focus ws))
     (let ((vp \ (@:@ ws windows))
           (b \ (begin (@ vp)))
           (e \ (end (@ vp))))

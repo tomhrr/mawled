@@ -184,6 +184,21 @@
      (event (Window))
      (window (Window)))))
 
+  (def ConfigureEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (event (Window))
+     (window (Window))
+     (x int)
+     (y int)
+     (width int)
+     (height int)
+     (border-width int)
+     (above (Window))
+     (override-redirect int))))
+
   (def ConfigureRequestEvent (struct extern
     ((type int)
      (serial uint64)
@@ -344,6 +359,7 @@
   (def leave-window-mask   (var extern (const uint) (cast (<< 1 5) uint)))
   (def pointer-motion-mask (var extern (const uint) (cast (<< 1 6) uint)))
 
+  (def structure-notify-mask      (var extern (const uint) (cast (<< 1 17) uint)))
   (def substructure-notify-mask   (var extern (const uint) (cast (<< 1 19) uint)))
   (def substructure-redirect-mask (var extern (const uint) (cast (<< 1 20) uint)))
   (def focus-change-mask          (var extern (const uint) (cast (<< 1 21) uint)))
@@ -364,6 +380,7 @@
   (def destroy-notify    (var extern (const int) 17))
   (def map-notify        (var extern (const int) 19))
   (def map-request       (var extern (const int) 20))
+  (def configure-notify  (var extern (const int) 22))
   (def configure-request (var extern (const int) 23))
 
   (def above            (var extern (const int) 0))

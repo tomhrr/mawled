@@ -39,6 +39,8 @@
     ((dpy     (p Display))
      (root    (Window))
      (mode    Mode)
+     (width   uint)
+     (height  uint)
      (windows (p (List (Window))))
      (tabmap  (p (Map (Window) (Window)))))))
 
@@ -304,6 +306,18 @@
                     height-return (# border-width-return)
                     (# depth-return)))
     (return)))
+
+(def set-width-and-height
+  (fn extern bool ((ws (p Workspace)))
+    (let ((width   uint)
+          (height  uint))
+      (get-width-and-height ws (# width) (# height))
+      (and (or (!= width  (@:@ ws width))
+               (!= height (@:@ ws height)))
+        (do (setf (:@ ws width) width)
+            (setf (:@ ws height) height)
+            (return true))))
+    false))
 
 (def draw-fullscreen
   (fn extern void ((ws (p Workspace)))

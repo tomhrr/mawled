@@ -135,6 +135,9 @@
                              (tabmap wmap))))
           (init (@ vec))
           (init (@ wmap))
+          (setf (: ws width)  0)
+          (setf (: ws height) 0)
+          (set-width-and-height (# ws))
           (push-back workspaces ws))))
 
     (init keycode-to-number)
@@ -158,10 +161,11 @@
                 mod1-mask
                 root owner-events-true grab-mode-async grab-mode-async))
 
-    (select-input dpy root (| substructure-notify-mask
+    (select-input dpy root (| structure-notify-mask
+                           (| substructure-notify-mask
                            (| substructure-redirect-mask
                            (| enter-window-mask
-                              leave-window-mask))))
+                              leave-window-mask)))))
 
     (while true
       (def ws (var auto (p Workspace) ($ workspaces workspace-index)))
@@ -213,4 +217,14 @@
                       0))
                   0)
               0)
-          0)))))))))))
+      (if (= (@: ev type) configure-notify)
+          (do (let ((b \ (begin workspaces))
+                    (e \ (end workspaces))
+                    (changed bool false))
+                (for true (!= b e) (setv b (successor b))
+                  (and (set-width-and-height (source b))
+                    (setv changed true)))
+                (and changed
+                  (do (draw ws) true))
+                0))
+          0))))))))))))

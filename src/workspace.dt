@@ -84,7 +84,9 @@
 
 (def unset-focus
   (fn extern void ((ws (p Workspace)) (window (Window)))
-    (and (= window pointer-root)
+    (and (or (= window (@:@ ws root))
+         (or (= window no-window)
+             (= window pointer-root)))
       (return))
     (and (not (has-window ws window))
       (do (fprintf stderr

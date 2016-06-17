@@ -238,15 +238,16 @@
       (return))
     (let ((next \ (get-next-window ws from-window)))
       (if (= next no-window)
-          (if (= from-window (@:@ ws root))
-              (do (focus-second-window ws)
-                  (return))
-          (if (= from-window no-window)
-              (return)
-              (do (fprintf stderr "Unable to find window from %lu! Aborting!\n"
-                           from-window)
-                  (abort)
-                  0)))
+          (cond ((= from-window (@:@ ws root))
+                 (do (focus-second-window ws)
+                     (return)))
+                ((= from-window no-window)
+                 (return))
+                (true
+                 (do (fprintf stderr "Unable to find window from %lu! Aborting!\n"
+                              from-window)
+                     (abort)
+                     0)))
           (do (set-focus ws next (get-focus ws))
               0)))
     (return)))
@@ -441,11 +442,12 @@
 (def draw
   (fn extern void ((ws (p Workspace)))
     (let ((mode \ (@:@ ws mode)))
-      (if (= mode (Mode fullscreen))
-          (do (draw-fullscreen ws) 0)
-      (if (= mode (Mode vertical))
-          (do (draw-vertical ws) 0)
-          (do (draw-horizontal ws) 0))))
+      (cond ((= mode (Mode fullscreen))
+             (do (draw-fullscreen ws) 0))
+            ((= mode (Mode vertical))
+             (do (draw-vertical ws) 0))
+            (true
+             (do (draw-horizontal ws) 0))))
     (return)))
 
 (def map-workspace

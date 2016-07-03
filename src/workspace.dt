@@ -36,13 +36,14 @@
 
 (def Workspace
   (struct extern
-    ((dpy     (p Display))
-     (root    (Window))
-     (mode    Mode)
-     (width   uint)
-     (height  uint)
-     (windows (p (List (Window))))
-     (tabmap  (p (Map (Window) (Window)))))))
+    ((dpy           (p Display))
+     (root          (Window))
+     (mode          Mode)
+     (width         uint)
+     (height        uint)
+     (windows       (p (List (Window))))
+     (tabmap        (p (Map (Window) (Window))))
+     (last-focussed (Window)))))
 
 (def = (fn extern bool ((a (ref (const Workspace)))
                         (b (ref (const Workspace))))
@@ -65,16 +66,20 @@
           no-window
           (@ (front (@ windows)))))))
 
+(def get-display
+  (fn extern (p Display) ((ws (p Workspace)))
+    (@:@ ws dpy)))
+
 (def get-focus
   (fn extern (Window) ((ws (p Workspace)))
     (let ((focus-return (Window))
           (revert-to-return int))
-      (get-input-focus (@:@ ws dpy) (# focus-return) (# revert-to-return))
+      (get-input-focus (get-display ws) (# focus-return) (# revert-to-return))
       focus-return)))
 
-(def get-display
-  (fn extern (p Display) ((ws (p Workspace)))
-    (@:@ ws dpy)))
+(def get-last-focussed
+  (fn extern (Window) ((ws (p Workspace)))
+    (@:@ ws last-focussed)))
 
 (def has-window
   (fn extern bool ((ws (p Workspace)) (window (Window)))
@@ -116,6 +121,7 @@
       (get-window-attributes display window (# window-attributes))
       (and (not (= is-unmapped (@: window-attributes map-state)))
         (do (set-input-focus display window revert-to-none current-time)
+            (setf (:@ ws last-focussed) window)
             (raise-window display window)
             (set-window-border display window (black-pixel display))
             (setf (: window-changes border-width) 1)
@@ -309,7 +315,7 @@
           (root-return         (Window))
           (border-width-return uint)
           (depth-return        uint))
-      (get-geometry (@:@ ws dpy) (@:@ ws root) (# root-return)
+      (get-geometry (get-display ws) (@:@ ws root) (# root-return)
                     (# x-return) (# y-return) width-return
                     height-return (# border-width-return)
                     (# depth-return)))
@@ -338,7 +344,7 @@
           (b \ (begin (@ windows)))
           (e \ (end (@ windows))))
       (for true (!= b e) (setv b (successor b))
-        (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
+        (move-resize-window (get-display ws) (@ (source b)) 0 0
                             (- width-return (cast 2 uint))
                             (- height-return (cast 2 uint)))))
     (return)))
@@ -362,23 +368,24 @@
     (let ((windows \ (@:@ ws windows))
           (b \ (begin (@ windows)))
           (e \ (end (@ windows)))
-          (count \ (size (@ windows))))
+          (count \ (size (@ windows)))
+          (display \ (get-display ws)))
       (if (= count (cast 1 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
+          (do (move-resize-window display (@ (source b)) 0 0
                                   (- width-return (cast 2 uint))
                                   (- height-return (cast 2 uint)))
               0)
       (if (= count (cast 2 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
+          (do (move-resize-window display (@ (source b)) 0 0
                                   (- (/ width-return 2) (cast 2 uint))
                                   (- height-return (cast 2 uint)))
-              (move-resize-window (@:@ ws dpy) (@ (source (successor b)))
+              (move-resize-window display (@ (source (successor b)))
                                   (cast (/ width-return 2) int) 0
                                   (- (/ width-return 2) (cast 2 uint))
                                   (- height-return (cast 2 uint)))
               0)
           (do
-            (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
+            (move-resize-window display (@ (source b)) 0 0
                                 (- (/ width-return 2) (cast 2 uint))
                                 (- height-return (cast 2 uint)))
             (setv b (successor b))
@@ -387,7 +394,7 @@
                   (height \ (/ height-return c))
                   (leftover \ (% height-return c)))
               (for true (!= b e) (do (setv b (successor b)) (incv i))
-                (move-resize-window (@:@ ws dpy) (@ (source b))
+                (move-resize-window display (@ (source b))
                                     (cast (/ width-return 2) int)
                                     (cast (* height (cast i uint)) int)
                                     (- (/ width-return 2) (cast 2 uint))
@@ -409,23 +416,24 @@
     (let ((windows \ (@:@ ws windows))
           (b \ (begin (@ windows)))
           (e \ (end (@ windows)))
-          (count \ (size (@ windows))))
+          (count \ (size (@ windows)))
+          (display \ (get-display ws)))
       (if (= count (cast 1 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
+          (do (move-resize-window display (@ (source b)) 0 0
                                   (- width-return (cast 2 uint))
                                   (- height-return (cast 2 uint)))
               0)
       (if (= count (cast 2 size))
-          (do (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
+          (do (move-resize-window display (@ (source b)) 0 0
                                   (- width-return (cast 2 uint))
                                   (- (/ height-return 2) (cast 2 uint)))
-              (move-resize-window (@:@ ws dpy) (@ (source (successor b))) 0
+              (move-resize-window display (@ (source (successor b))) 0
                                   (cast (/ height-return 2) int)
                                   (- width-return (cast 2 uint))
                                   (- (/ height-return 2) (cast 2 uint)))
               0)
           (do
-            (move-resize-window (@:@ ws dpy) (@ (source b)) 0 0
+            (move-resize-window display (@ (source b)) 0 0
                                 (- width-return (cast 2 uint))
                                 (- (/ height-return 2) (cast 2 uint)))
             (setv b (successor b))
@@ -434,7 +442,7 @@
                   (width \ (/ width-return c))
                   (leftover \ (% width-return c)))
               (for true (!= b e) (do (setv b (successor b)) (incv i))
-                (move-resize-window (@:@ ws dpy) (@ (source b))
+                (move-resize-window display (@ (source b))
                                     (cast (* width (cast i uint)) int)
                                     (cast (/ height-return 2) int)
                                     (- (+ width
@@ -455,6 +463,10 @@
              (do (draw-vertical ws) 0))
             (true
              (do (draw-horizontal ws) 0))))
+    (let ((ev Event))
+      (while (check-typed-event (get-display ws)
+                                enter-notify (# ev))
+        true))
     (return)))
 
 (def map-workspace
@@ -463,7 +475,7 @@
           (b \ (begin (@ vp)))
           (e \ (end (@ vp))))
       (for true (!= b e) (setv b (successor b))
-        (map-window (@:@ ws dpy) (@ (source b)))))
+        (map-window (get-display ws) (@ (source b)))))
     (return)))
 
 (def unmap-workspace
@@ -473,7 +485,7 @@
           (b \ (begin (@ vp)))
           (e \ (end (@ vp))))
       (for true (!= b e) (setv b (successor b))
-        (unmap-window (@:@ ws dpy) (@ (source b)))))
+        (unmap-window (get-display ws) (@ (source b)))))
     (return)))
 
 (def move-focus
@@ -505,7 +517,7 @@
     (and (= no-window (get-principal target-ws))
       (do (set-principal target-ws window) true))
 
-    (unmap-window (@:@ ws dpy) window)
+    (unmap-window (get-display ws) window)
 
     (draw ws)
     (and (not (empty (@ (@:@ ws windows))))

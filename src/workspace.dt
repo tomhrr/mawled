@@ -341,11 +341,6 @@
                             (- height-return (cast 2 uint)))))
     (return)))
 
-(def %
-  (fn extern uint ((a uint) (b uint))
-    (let ((div \ (/ a b)))
-      (- a (* div b)))))
-
 (def /
   (fn extern uint ((a uint) (b int))
     (/ a (cast b uint))))

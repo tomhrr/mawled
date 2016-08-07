@@ -34,6 +34,9 @@
 
 (def Mode (enum extern int (fullscreen vertical horizontal)))
 
+(def WM_PROTOCOLS     (var intern (p (const char)) "WM_PROTOCOLS"))
+(def WM_DELETE_WINDOW (var intern (p (const char)) "WM_DELETE_WINDOW"))
+
 (def Workspace
   (struct extern
     ((dpy           (p Display))
@@ -507,4 +510,47 @@
     (draw ws)
     (and (not (empty (@ (@:@ ws windows))))
       (focus-next-window ws))
+    (return)))
+
+(def send-close-window-event
+  (fn intern void ((ws (p Workspace))
+                   (window (Window)))
+    (let ((ev-cm ClientMessageEvent
+          ((type client-message)
+           (serial 0)
+           (send-event 1)
+           (display (get-display ws))
+           (window window)
+           (message-type (intern-atom (get-display ws)
+                                      WM_PROTOCOLS
+                                      false))
+           (format 32))))
+      (setf ($ (@: ev-cm data) 0) (intern-atom (get-display ws)
+                                               WM_DELETE_WINDOW
+                                               false))
+      (send-event (get-display ws) window
+                  false
+                  (cast 0 int64)
+                  (cast (# ev-cm) (p Event)))
+      (return))))
+
+(def close-window
+  (fn extern void ((ws (p Workspace))
+                   (window (Window)))
+    (let ((destroy \ true)
+          (protocols-return (p (Atom)))
+          (count-return int)
+          (status \ (get-wm-protocols (get-display ws) window
+                                      (# protocols-return)
+                                      (# count-return))))
+      (and (!= 0 status)
+        (let ((i \ 0))
+          (for true (< i count-return) (incv i)
+            (let ((name \ (get-atom-name (get-display ws)
+                                         (@$ protocols-return i))))
+              (and (= 0 (strcmp name WM_DELETE_WINDOW))
+                (send-delete-window-event ws window)
+                (setv destroy false))))))
+      (and destroy
+        (destroy-window (get-display ws) window)))
     (return))))

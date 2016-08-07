@@ -39,7 +39,7 @@
            (cond ((event-key-is ws ev-key "Return")
                   (system terminal-command))
                  ((event-key-is ws ev-key "C")
-                  (destroy-window (get-display ws) (get-focus ws)))
+                  (close-window ws (get-focus ws)))
                  ((event-key-is ws ev-key "Tab")
                   (focus-prev-window ws))
                  (true

@@ -12,6 +12,7 @@
   (def Cursor      (macro extern (void) (q uint64)))
   (def Time        (macro extern (void) (q uint64)))
   (def XID         (macro extern (void) (q uint64)))
+  (def Atom        (macro extern (void) (q uint64)))
 
   (def Screen (struct extern
     ((_unused (array-of 16 uint8))
@@ -177,6 +178,15 @@
      (window (Window))
      (override-redirect int))))
 
+  (def UnmapEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (event (Window))
+     (window (Window))
+     (from-configure int))))
+
   (def MapRequestEvent (struct extern
     ((type int)
      (serial uint64)
@@ -240,6 +250,16 @@
      (error-code uint64)
      (request-code uint64)
      (minor-code uint64))))
+
+  (def ClientMessageEvent (struct extern
+    ((type int)
+     (serial uint64)
+     (send-event int)
+     (display (p Display))
+     (window (Window))
+     (message-type (Atom))
+     (format int)
+     (data (array-of 5 uint64)))))
 
   (def Event (struct extern
     ((type int)
@@ -363,7 +383,29 @@
   (fn extern-c (p (fn int ((display (p Display))
                            (ev-error (p ErrorEvent)))))
     ((handler (p (fn int ((display (p Display))
-                          (ev-error (p ErrorEvent))))))))))
+                          (ev-error (p ErrorEvent)))))))))
+
+(def XGetWMProtocols
+  (fn extern-c int ((dpy (p Display))
+                    (w (Window))
+                    (protocols-return (p (p (Atom))))
+                    (count-return (p int)))))
+
+(def XInternAtom
+  (fn extern-c (Atom) ((dpy (p Display))
+                       (atom-name (p (const char)))
+                       (only-if-exists bool))))
+
+(def XGetAtomName
+  (fn extern-c (p (const char)) ((dpy (p Display))
+                                 (atom (Atom)))))
+
+(def XSendEvent
+  (fn extern-c int ((dpy (p Display))
+                    (w (Window))
+                    (propagate bool)
+                    (event-mask int64)
+                    (event-send (p Event))))))
 
 (namespace x11
   (def shift-mask          (var extern uint (cast (<< 1 0) uint)))
@@ -394,10 +436,12 @@
   (def focus-out         (var extern int 10))
   (def create-notify     (var extern int 16))
   (def destroy-notify    (var extern int 17))
+  (def unmap-notify      (var extern int 18))
   (def map-notify        (var extern int 19))
   (def map-request       (var extern int 20))
   (def configure-notify  (var extern int 22))
   (def configure-request (var extern int 23))
+  (def client-message    (var extern int 33))
 
   (def above            (var extern int 0))
   (def below            (var extern int 1))
@@ -616,4 +660,30 @@
                            (ev-error (p ErrorEvent)))))
       ((handler (p (fn int ((display (p Display))
                             (ev-error (p ErrorEvent)))))))
-        (XSetErrorHandler handler))))
+        (XSetErrorHandler handler)))
+
+  (def get-wm-protocols
+    (fn extern int ((dpy (p Display))
+                    (w (Window))
+                    (protocols-return (p (p (Atom))))
+                    (count-return (p int)))
+      (XGetWMProtocols dpy w protocols-return count-return)))
+
+  (def intern-atom
+    (fn extern (Atom) ((dpy (p Display))
+                       (atom-name (p (const char)))
+                       (only-if-exists bool))
+      (XInternAtom dpy atom-name only-if-exists)))
+
+  (def get-atom-name
+    (fn extern (p (const char)) ((dpy (p Display))
+                                 (atom (Atom)))
+      (XGetAtomName dpy atom)))
+
+  (def send-event
+    (fn extern int ((dpy (p Display))
+                    (w (Window))
+                    (propagate bool)
+                    (event-mask int64)
+                    (event-send (p Event)))
+      (XSendEvent dpy w propagate event-mask event-send))))

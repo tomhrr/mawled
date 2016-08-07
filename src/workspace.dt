@@ -512,7 +512,7 @@
       (focus-next-window ws))
     (return)))
 
-(def send-close-window-event
+(def send-delete-window-event
   (fn intern void ((ws (p Workspace))
                    (window (Window)))
     (let ((ev-cm ClientMessageEvent
@@ -537,8 +537,7 @@
 (def close-window
   (fn extern void ((ws (p Workspace))
                    (window (Window)))
-    (let ((destroy \ true)
-          (protocols-return (p (Atom)))
+    (let ((protocols-return (p (Atom)))
           (count-return int)
           (status \ (get-wm-protocols (get-display ws) window
                                       (# protocols-return)
@@ -549,8 +548,7 @@
             (let ((name \ (get-atom-name (get-display ws)
                                          (@$ protocols-return i))))
               (and (= 0 (strcmp name WM_DELETE_WINDOW))
-                (send-delete-window-event ws window)
-                (setv destroy false))))))
-      (and destroy
-        (destroy-window (get-display ws) window)))
+                (do (send-delete-window-event ws window)
+                    (return))))))))
+    (destroy-window (get-display ws) window)
     (return))))

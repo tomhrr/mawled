@@ -11,6 +11,7 @@
   (def InputMask   (macro extern (void) (q int64)))
   (def Cursor      (macro extern (void) (q uint64)))
   (def Time        (macro extern (void) (q uint64)))
+  (def XID         (macro extern (void) (q uint64)))
 
   (def Screen (struct extern
     ((_unused (array-of 16 uint8))
@@ -231,6 +232,15 @@
      (display (p Display))
      (window (Window)))))
 
+  (def ErrorEvent (struct extern
+    ((type int)
+     (display (p Display))
+     (resourceid (XID))
+     (serial uint64)
+     (error-code uint64)
+     (request-code uint64)
+     (minor-code uint64))))
+
   (def Event (struct extern
     ((type int)
      (_unused (array-of 188 char))))))
@@ -347,7 +357,13 @@
                      (w (Window)))))
 (def XUnmapWindow
   (fn extern-c void ((dpy (p Display))
-                     (w (Window))))))
+                     (w (Window)))))
+
+(def XSetErrorHandler
+  (fn extern-c (p (fn int ((display (p Display))
+                           (ev-error (p ErrorEvent)))))
+    ((handler (p (fn int ((display (p Display))
+                          (ev-error (p ErrorEvent))))))))))
 
 (namespace x11
   (def shift-mask          (var extern uint (cast (<< 1 0) uint)))
@@ -593,4 +609,11 @@
   (def ungrab-pointer
     (fn extern int ((dpy (p Display))
                     (time (Time)))
-      (XUngrabPointer dpy time))))
+      (XUngrabPointer dpy time)))
+
+  (def set-error-handler
+    (fn extern (p (fn int ((display (p Display))
+                           (ev-error (p ErrorEvent)))))
+      ((handler (p (fn int ((display (p Display))
+                            (ev-error (p ErrorEvent)))))))
+        (XSetErrorHandler handler))))

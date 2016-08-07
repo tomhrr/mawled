@@ -91,6 +91,16 @@
           (true true))
     (return)))
 
+(def error-handler (fn intern int ((display (p Display))
+                                   (ev-error (p ErrorEvent)))
+  (fprintf stderr "Error: serial %lu, ec %d, rc %d, mc %d, rid %lu\n"
+                  (@:@ ev-error serial)
+                  (@:@ ev-error error-code)
+                  (@:@ ev-error request-code)
+                  (@:@ ev-error minor-code)
+                  (@:@ ev-error resourceid))
+  (return 0)))
+
 (def main (fn extern-c int ((argc int) (argv (p (p (const char)))))
   (let ((dpy (p Display))
         (root (Window))
@@ -122,6 +132,7 @@
                  terminal-command-env))
 
     (setv root (default-root-window dpy))
+    (set-error-handler (# error-handler))
 
     (let ((i \ 1))
       (for true (< i 10) (incv i)

@@ -9,6 +9,7 @@
 (import vector)
 (import list)
 (import unistd)
+(import stdlib)
 (import x11-xlib)
 
 (using-namespace x11
@@ -129,9 +130,9 @@
             (setf (: window-changes border-width) 1)
             (configure-window display window cw-border-width
                               (# window-changes))))
-      (and (or (= prev-window no-window)
-           (or (= prev-window (@:@ ws root))
-               (= prev-window (cast 1 (Window)))))
+      (and (or (=  prev-window no-window)
+           (or (=  prev-window (@:@ ws root))
+               (=' prev-window 1)))
         (return))
       (unset-focus ws prev-window))
     (return)))
@@ -278,7 +279,7 @@
       (and (= iter (end (@ windows)))
         (do (fprintf stderr "Removing non-existent window!\n")
             (abort)))
-      (and (!= (cast 1 size) (size (@ windows)))
+      (and (!=' (size (@ windows)) 1)
         (focus-next-window ws window))
       (erase (@ windows) iter)
       (regenerate-tabmap ws)
@@ -340,13 +341,9 @@
           (e \ (end (@ windows))))
       (for true (!= b e) (setv b (successor b))
         (move-resize-window (get-display ws) (@ (source b)) 0 0
-                            (- width-return (cast 2 uint))
-                            (- height-return (cast 2 uint)))))
+                            (-' width-return 2)
+                            (-' height-return 2))))
     (return)))
-
-(def /
-  (fn extern uint ((a uint) (b int))
-    (/ a (cast b uint))))
 
 (def draw-vertical
   (fn extern void ((ws (p Workspace)))
@@ -360,40 +357,37 @@
           (e \ (end (@ windows)))
           (count \ (size (@ windows)))
           (display \ (get-display ws)))
-      (if (= count (cast 1 size))
-          (do (move-resize-window display (@ (source b)) 0 0
-                                  (- width-return (cast 2 uint))
-                                  (- height-return (cast 2 uint)))
-              0)
-      (if (= count (cast 2 size))
-          (do (move-resize-window display (@ (source b)) 0 0
-                                  (- (/ width-return 2) (cast 2 uint))
-                                  (- height-return (cast 2 uint)))
-              (move-resize-window display (@ (source (successor b)))
-                                  (cast (/ width-return 2) int) 0
-                                  (- (/ width-return 2) (cast 2 uint))
-                                  (- height-return (cast 2 uint)))
-              0)
-          (do
-            (move-resize-window display (@ (source b)) 0 0
-                                (- (/ width-return 2) (cast 2 uint))
-                                (- height-return (cast 2 uint)))
-            (setv b (successor b))
-            (let ((i \ 0)
-                  (c \ (cast (- (cast count int) 1) uint))
-                  (height \ (/ height-return c))
-                  (leftover \ (% height-return c)))
-              (for true (!= b e) (do (setv b (successor b)) (incv i))
-                (move-resize-window display (@ (source b))
-                                    (cast (/ width-return 2) int)
-                                    (cast (* height (cast i uint)) int)
-                                    (- (/ width-return 2) (cast 2 uint))
-                                    (- (+ height
-                                          (if (= (cast i uint)
-                                                 (- c (cast 1 uint)))
-                                              leftover
-                                              (cast 0 uint)))
-                                        (cast 2 uint)))))))))
+      (cond ((=' count 1)
+             (move-resize-window display (@ (source b)) 0 0
+                                 (-' width-return 2)
+                                 (-' height-return 2)))
+            ((=' count 2)
+             (do (move-resize-window display (@ (source b)) 0 0
+                                     (-' (/' width-return 2) 2)
+                                     (-' height-return 2))
+                 (move-resize-window display (@ (source (successor b)))
+                                     (cast (/' width-return 2) int) 0
+                                     (-' (/' width-return 2) 2)
+                                     (-' height-return 2))))
+            (true
+             (do (move-resize-window display (@ (source b)) 0 0
+                                     (-' (/' width-return 2) 2)
+                                     (-' height-return 2))
+                 (setv b (successor b))
+                 (let ((i \ 0)
+                       (c \ (-' count 1))
+                       (height \ (/' height-return c))
+                       (leftover \ (%' height-return c)))
+                   (for true (!= b e) (do (setv b (successor b)) (incv i))
+                     (move-resize-window display (@ (source b))
+                                         (cast (/' width-return 2) int)
+                                         (cast (*' height i) int)
+                                         (-' (/' width-return 2) 2)
+                                         (-' (+' height
+                                                 (if (=' i (-' c 1))
+                                                     leftover
+                                                     (cast 0 uint)))
+                                             2))))))))
     (return)))
 
 (def draw-horizontal
@@ -408,38 +402,37 @@
           (e \ (end (@ windows)))
           (count \ (size (@ windows)))
           (display \ (get-display ws)))
-      (if (= count (cast 1 size))
-          (move-resize-window display (@ (source b)) 0 0
-                              (- width-return (cast 2 uint))
-                              (- height-return (cast 2 uint)))
-      (if (= count (cast 2 size))
-          (do (move-resize-window display (@ (source b)) 0 0
-                                  (- width-return (cast 2 uint))
-                                  (- (/ height-return 2) (cast 2 uint)))
-              (move-resize-window display (@ (source (successor b))) 0
-                                  (cast (/ height-return 2) int)
-                                  (- width-return (cast 2 uint))
-                                  (- (/ height-return 2) (cast 2 uint))))
-          (do
-            (move-resize-window display (@ (source b)) 0 0
-                                (- width-return (cast 2 uint))
-                                (- (/ height-return 2) (cast 2 uint)))
-            (setv b (successor b))
-            (let ((i \ 0)
-                  (c \ (cast (- (cast count int) 1) uint))
-                  (width \ (/ width-return c))
-                  (leftover \ (% width-return c)))
-              (for true (!= b e) (do (setv b (successor b)) (incv i))
-                (move-resize-window display (@ (source b))
-                                    (cast (* width (cast i uint)) int)
-                                    (cast (/ height-return 2) int)
-                                    (- (+ width
-                                          (if (= (cast i uint)
-                                                 (- c (cast 1 uint)))
-                                              leftover
-                                              (cast 0 uint)))
-                                       (cast 2 uint))
-                                    (- (/ height-return 2) (cast 2 uint)))))))))
+      (cond ((=' count 1)
+             (move-resize-window display (@ (source b)) 0 0
+                                 (-' width-return 2)
+                                 (-' height-return 2)))
+            ((=' count 2)
+             (do (move-resize-window display (@ (source b)) 0 0
+                                     (-' width-return 2)
+                                     (-' (/' height-return 2) 2))
+                 (move-resize-window display (@ (source (successor b))) 0
+                                     (cast (/' height-return 2) int)
+                                     (-' width-return 2)
+                                     (-' (/' height-return 2) 2))))
+            (true
+             (do (move-resize-window display (@ (source b)) 0 0
+                                     (-' width-return 2)
+                                     (-' (/' height-return 2) 2))
+                 (setv b (successor b))
+                 (let ((i \ 0)
+                       (c \ (-' count 1))
+                       (width \ (/' width-return c))
+                       (leftover \ (%' width-return c)))
+                   (for true (!= b e) (do (setv b (successor b)) (incv i))
+                     (move-resize-window display (@ (source b))
+                                         (cast (*' width i) int)
+                                         (cast (/' height-return 2) int)
+                                         (-' (+ width
+                                                (if (=' i (-' c 1))
+                                                    leftover
+                                                    (cast 0 uint)))
+                                             2)
+                                         (-' (/' height-return 2) 2))))))))
     (return)))
 
 (def draw

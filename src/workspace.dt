@@ -78,7 +78,7 @@
 (def get-focus
   (fn extern (Window) ((ws (p Workspace)))
     (let ((focus-return (Window))
-          (revert-to-return int))
+          (revert-to-return RevertOption))
       (get-input-focus (get-display ws) (# focus-return) (# revert-to-return))
       focus-return)))
 
@@ -109,7 +109,7 @@
           (display \ (get-display ws)))
       (set-window-border display window (white-pixel display))
       (setf (: window-changes border-width) 1)
-      (configure-window display window cw-border-width
+      (configure-window display window CWBorderWidth
                         (# window-changes)))
     (return)))
 
@@ -123,13 +123,13 @@
 	  (window-attributes WindowAttributes)
           (display \ (get-display ws)))
       (get-window-attributes display window (# window-attributes))
-      (and (not (= is-unmapped (@: window-attributes map-state)))
-        (do (set-input-focus display window revert-to-none current-time)
+      (and (not (= IsUnmapped (@: window-attributes map-state)))
+        (do (set-input-focus display window RevertToNone current-time)
             (setf (:@ ws last-focussed) window)
             (raise-window display window)
             (set-window-border display window (black-pixel display))
             (setf (: window-changes border-width) 1)
-            (configure-window display window cw-border-width
+            (configure-window display window CWBorderWidth
                               (# window-changes))))
       (and (or (=  prev-window no-window)
            (or (=  prev-window (@:@ ws root))
@@ -287,7 +287,8 @@
       (and (empty (@ (@:@ ws windows)))
         (set-input-focus (get-display ws)
                          (@:@ ws root)
-                         revert-to-none current-time)))
+                         RevertToNone
+                         current-time)))
     (return)))
 
 (def remove-window-nofocus

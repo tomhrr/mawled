@@ -3,17 +3,54 @@
 (import macros)
 (import derivations)
 (import variant)
+(import bitset-enum)
 
 (namespace x11
   (def Window      (macro extern (void) (q uint64)))
   (def Colormap    (macro extern (void) (q uint64)))
-  (def ValueMask   (macro extern (void) (q uint64)))
   (def BorderPixel (macro extern (void) (q uint64)))
   (def InputMask   (macro extern (void) (q int64)))
   (def Cursor      (macro extern (void) (q uint64)))
   (def Time        (macro extern (void) (q uint64)))
   (def XID         (macro extern (void) (q uint64)))
   (def Atom        (macro extern (void) (q uint64)))
+
+  (def-bitset-enum KeyMask extern uint
+    (UnusedMask
+     ShiftMask LockMask ControlMask
+     Mod1Mask Mod2Mask Mod3Mask Mod4Mask Mod5Mask))
+
+  (def-bitset-enum InputEventMask extern uint
+    (NoEventMask
+     KeyPressMask KeyReleaseMask
+     ButtonPressMask ButtonReleaseMask
+     EnterWindowMask LeaveWindowMask
+     PointerMotionMask PointerMotionHintMask
+     Button1MotionMask Button2MotionMask
+     Button3MotionMask Button4MotionMask
+     Button5MotionMask ButtonMotionMask
+     KeymapStateMask ExposureMask
+     VisibilityChangeMask StructureNotifyMask
+     ResizeRedirectMask SubstructureNotifyMask
+     SubstructureRedirectMask FocusChangeMask
+     PropertyChangeMask ColormapChangeMask
+     OwnerGrabButtonMask))
+
+  (def Detail (enum extern int
+    (Above Below TopIf BottomIf Opposite)))
+
+  (def-bitset-enum CWValueMask extern uint64
+    (CWUnused CWX CWY CWWidth CWHeight CWBorderWidth CWSibling CWStackMode))
+
+  (def RevertOption (enum extern int
+    (RevertToNone
+     RevertToPointerRoot
+     RevertToParent)))
+
+  (def WindowMapState (enum extern int
+    (IsUnmapped
+     IsUnviewable
+     IsViewable)))
 
   (def Screen (struct extern
     ((_unused (array-of 16 uint8))
@@ -43,7 +80,6 @@
      (screens (p Screen))
      (_unused2 (array-of 4440 uint8)))))
 
-
   (def WindowAttributes (struct extern
     ((x int)
      (y int)
@@ -62,7 +98,7 @@
      (save-under int)
      (colormap (Colormap))
      (map-installed int)
-     (map-state int)
+     (map-state WindowMapState)
      (all-event-masks int64)
      (your-event-mask int64)
      (do-not-propagate-mask int64)
@@ -85,7 +121,7 @@
                      (y int)
                      (x-root int)
                      (y-root int)
-                     (state uint)
+                     (state KeyMask)
                      (keycode uint)
                      (same-screen int)))
      (KeyReleaseEvent ((serial uint64)
@@ -99,7 +135,7 @@
                        (y int)
                        (x-root int)
                        (y-root int)
-                       (state uint)
+                       (state KeyMask)
                        (keycode uint)
                        (same-screen int)))
      (ButtonPressEvent ((serial uint64)
@@ -113,7 +149,7 @@
                         (y int)
                         (x-root int)
                         (y-root int)
-                        (state uint)
+                        (state KeyMask)
                         (button uint)
                         (same-screen int)))
      (ButtonReleaseEvent ((serial uint64)
@@ -127,7 +163,7 @@
                           (y int)
                           (x-root int)
                           (y-root int)
-                          (state uint)
+                          (state KeyMask)
                           (button uint)
                           (same-screen int)))
      MotionNotify
@@ -146,7 +182,7 @@
                         (detail int)
                         (same-screen int)
                         (focus int)
-                        (state uint)))
+                        (state KeyMask)))
      LeaveNotify
      FocusIn
      FocusOut
@@ -186,8 +222,8 @@
                              (height int)
                              (border-width int)
                              (above (Window))
-                             (detail int)
-                             (value-mask (ValueMask))))
+                             (detail Detail)
+                             (value-mask CWValueMask)))
      GravityNotify
      ResizeRequest
      CirculateNotify
@@ -199,7 +235,7 @@
      ColormapNotify
      ClientMessage
      MappingNotify
-     (GenericEvent ((padding padding)))))
+     (GenericEvent ((_unused padding)))))
 
   (def WindowChanges (struct extern
     ((x int)
@@ -241,7 +277,7 @@
 (def XGrabKey
   (fn extern-c void ((dpy (p Display))
                      (keycode uint)
-                     (modifiers uint)
+                     (modifiers KeyMask)
                      (grab-window (Window))
                      (owner-events int)
                      (pointer-mode int)
@@ -294,7 +330,7 @@
 (def XSelectInput
   (fn extern-c void ((dpy (p Display))
                      (w (Window))
-                     (event-mask uint))))
+                     (event-mask InputEventMask))))
 (def XUngrabPointer
   (fn extern-c int ((dpy (p Display))
                      (time (Time)))))
@@ -311,12 +347,12 @@
 (def XSetInputFocus
   (fn extern-c void ((dpy (p Display))
                      (focus (Window))
-                     (revert-to int)
+                     (revert-to RevertOption)
                      (time (Time)))))
 (def XGetInputFocus
   (fn extern-c void ((dpy (p Display))
                      (focus-return (p (Window)))
-                     (revert-to-return (p int)))))
+                     (revert-to-return (p RevertOption)))))
 (def XSetWindowBorder
   (fn extern-c void ((dpy (p Display))
                      (w (Window))
@@ -324,7 +360,7 @@
 (def XConfigureWindow
   (fn extern-c void ((dpy (p Display))
                      (w (Window))
-                     (value-mask (ValueMask))
+                     (value-mask CWValueMask)
                      (values (p WindowChanges)))))
 (def XGetGeometry
   (fn extern-c int ((dpy (p Display))
@@ -372,67 +408,18 @@
                     (event-send (p Event))))))
 
 (namespace x11
-  (def shift-mask          (var extern uint (cast (<< 1 0) uint)))
-  (def mod1-mask           (var extern uint (cast (<< 1 3) uint)))
-
-  (def button-press-mask   (var extern uint (cast (<< 1 2) uint)))
-  (def button-release-mask (var extern uint (cast (<< 1 3) uint)))
-  (def enter-window-mask   (var extern uint (cast (<< 1 4) uint)))
-  (def leave-window-mask   (var extern uint (cast (<< 1 5) uint)))
-  (def pointer-motion-mask (var extern uint (cast (<< 1 6) uint)))
-
-  (def structure-notify-mask      (var extern uint (cast (<< 1 17) uint)))
-  (def substructure-notify-mask   (var extern uint (cast (<< 1 19) uint)))
-  (def substructure-redirect-mask (var extern uint (cast (<< 1 20) uint)))
-  (def focus-change-mask          (var extern uint (cast (<< 1 21) uint)))
-
   (def grab-mode-async   (var extern int    1))
   (def owner-events-true (var extern int    1))
   (def current-time      (var extern uint64 0))
 
-  (def key-press         (var extern int 2))
-  (def button-press      (var extern int 4))
-  (def button-release    (var extern int 5))
-  (def motion-notify     (var extern int 6))
   (def enter-notify      (var extern int 7))
-  (def leave-notify      (var extern int 8))
-  (def focus-in          (var extern int 9))
-  (def focus-out         (var extern int 10))
-  (def create-notify     (var extern int 16))
-  (def destroy-notify    (var extern int 17))
-  (def unmap-notify      (var extern int 18))
   (def map-notify        (var extern int 19))
-  (def map-request       (var extern int 20))
-  (def configure-notify  (var extern int 22))
-  (def configure-request (var extern int 23))
   (def client-message    (var extern int 33))
 
-  (def above            (var extern int 0))
-  (def below            (var extern int 1))
-  (def top-if           (var extern int 2))
-  (def bottom-if        (var extern int 3))
-  (def opposite         (var extern int 4))
-
-  (def cw-x (var extern (ValueMask) (cast (<< 1 0) (ValueMask))))
-  (def cw-y (var extern (ValueMask) (cast (<< 1 1) (ValueMask))))
-  (def cw-width (var extern (ValueMask) (cast (<< 1 2) (ValueMask))))
-  (def cw-height (var extern (ValueMask) (cast (<< 1 3) (ValueMask))))
-  (def cw-border-width (var extern (ValueMask) (cast (<< 1 4) (ValueMask))))
-  (def cw-sibling (var extern (ValueMask) (cast (<< 1 5) (ValueMask))))
-  (def cw-stack-mode (var extern (ValueMask) (cast (<< 1 6) (ValueMask))))
-
   (def none              (var extern int 0))
-  (def no-window         (var extern (Window)    0))
-  (def pointer-root      (var extern (Window)    1))
-  (def no-cursor         (var extern (Cursor)    0))
-
-  (def revert-to-none         (var extern int 0))
-  (def revert-to-pointer-root (var extern int 1))
-  (def revert-to-parent       (var extern int 2))
-
-  (def is-unmapped   (var extern int 0))
-  (def is-unviewable (var extern int 1))
-  (def is-viewable   (var extern int 2))
+  (def no-window         (var extern (Window) 0))
+  (def pointer-root      (var extern (Window) 1))
+  (def no-cursor         (var extern (Cursor) 0))
 
   (def open-display
     (fn extern (p Display) ((n (p (const char))))
@@ -470,7 +457,7 @@
   (def grab-key
     (fn extern void ((dpy (p Display))
                      (keycode uint)
-                     (modifiers uint)
+                     (modifiers KeyMask)
                      (grab-window (Window))
                      (owner-events int)
                      (pointer-mode int)
@@ -546,20 +533,20 @@
   (def select-input
     (fn extern void ((dpy (p Display))
                      (w (Window))
-                     (event-mask uint))
+                     (event-mask InputEventMask))
       (XSelectInput dpy w event-mask)))
 
   (def set-input-focus
     (fn extern void ((dpy (p Display))
                      (focus (Window))
-                     (revert-to int)
+                     (revert-to RevertOption)
                      (time (Time)))
       (XSetInputFocus dpy focus revert-to time)))
 
   (def get-input-focus
     (fn extern void ((dpy (p Display))
                      (focus-return (p (Window)))
-                     (revert-to-return (p int)))
+                     (revert-to-return (p RevertOption)))
       (XGetInputFocus dpy focus-return revert-to-return)))
 
   (def query-tree
@@ -610,7 +597,7 @@
   (def configure-window
     (fn extern void ((dpy (p Display))
                      (w (Window))
-                     (value-mask (ValueMask))
+                     (value-mask CWValueMask)
                      (values (p WindowChanges)))
       (XConfigureWindow dpy w value-mask values)))
 

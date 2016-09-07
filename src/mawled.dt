@@ -35,7 +35,7 @@
                    (terminal-command  (p (const char))))
     (def ws (var auto \ ($ (@ workspaces) (@ workspace-index))))
     (def ev (var auto Event))
-    (cond ((= (@:@ ev-key state) (| mod1-mask shift-mask))
+    (cond ((= (@:@ ev-key state) (| Mod1Mask ShiftMask))
            (cond ((event-key-is ws ev-key "Return")
                   (system terminal-command))
                  ((event-key-is ws ev-key "C")
@@ -48,7 +48,7 @@
                     (and (!= iter (end (@ keycode-to-number)))
                       (move-focus ws ($ (@ workspaces)
                                         (@:@ (source iter) second))))))))
-          ((= (@:@ ev-key state) mod1-mask)
+          ((= (@:@ ev-key state) Mod1Mask)
            (cond ((event-key-is ws ev-key "Tab")
                   (focus-next-window ws))
                  ((event-key-is ws ev-key "Return")
@@ -159,20 +159,20 @@
     (mfor String ("Return" "C" "Tab"
                   "1" "2" "3" "4" "5" "6" "7" "8" "9")
       (grab-key dpy (keysym-to-keycode dpy (string-to-keysym String))
-                (| mod1-mask shift-mask)
+                (| Mod1Mask ShiftMask)
                 root owner-events-true grab-mode-async grab-mode-async))
 
     (mfor String ("Return" "Tab" "P" "bracketleft" "bracketright"
                   "1" "2" "3" "4" "5" "6" "7" "8" "9")
       (grab-key dpy (keysym-to-keycode dpy (string-to-keysym String))
-                mod1-mask
+                Mod1Mask
                 root owner-events-true grab-mode-async grab-mode-async))
 
-    (select-input dpy root (| structure-notify-mask
-                           (| substructure-notify-mask
-                           (| substructure-redirect-mask
-                           (| enter-window-mask
-                              leave-window-mask)))))
+    (select-input dpy root (| StructureNotifyMask
+                           (| SubstructureNotifyMask
+                           (| SubstructureRedirectMask
+                           (| EnterWindowMask
+                              LeaveWindowMask)))))
 
     (while true
       (def ws (var auto (p Workspace) ($ workspaces workspace-index)))
@@ -189,7 +189,7 @@
          (and (= (@:@ ev override-redirect) 0)
            (do (set-focus ws (@:@ ev window) (get-focus ws))
                (select-input dpy (@:@ ev window)
-                             (| enter-window-mask focus-change-mask)))))
+                             (| EnterWindowMask FocusChangeMask)))))
         (MapRequestEvent
          (and (not (has-window ws (@:@ ev window)))
          (do (add-window ws (@:@ ev window))
@@ -200,12 +200,12 @@
            (do (remove-window ws (@:@ ev window))
                (draw ws))))
         (ConfigureRequestEvent
-         (and (= cw-stack-mode (& (@:@ ev value-mask)
-                                  cw-stack-mode))
+         (and (= CWStackMode (& (@:@ ev value-mask)
+                                CWStackMode))
            (do (def det (var auto \ (@:@ ev detail)))
-               (and (= det above)
+               (and (= det Above)
                  (raise-window dpy (@:@ ev window)))
-               (and (= det below)
+               (and (= det Below)
                  (lower-window dpy (@:@ ev window))))))
         (ConfigureNotifyEvent
          (let ((b \ (begin workspaces))

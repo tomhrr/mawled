@@ -412,9 +412,12 @@
   (def owner-events-true (var extern int    1))
   (def current-time      (var extern uint64 0))
 
-  (def enter-notify      (var extern int 7))
-  (def map-notify        (var extern int 19))
-  (def client-message    (var extern int 33))
+  (def enter-notify   (var extern int (cast (@: (EnterWindowEvent) type)
+                                            int)))
+  (def map-notify     (var extern int (cast (@: (MapNotifyEvent) type)
+                                            int)))
+  (def client-message (var extern int (cast (@: (ClientMessageEvent) type))
+                                            int))
 
   (def none              (var extern int 0))
   (def no-window         (var extern (Window) 0))

@@ -3,12 +3,8 @@ bindir=$(prefix)/bin
 
 all: mawled
 
-# Previously, this used --static-modules as well.  When used with -O4,
-# however, the IPSCCP pass fails, so it has been omitted for now.  The
-# only effect is that the binary size is slightly larger (31kb as
-# against 26kb).
 mawled: libx11-xlib.dtm libworkspace.dtm src/mawled.dt
-	dalec -lm -O4 src/mawled.dt -lX11 -o mawled
+	dalec -lm -O4 --static-modules src/mawled.dt -lX11 -o mawled
 
 libworkspace.dtm: libx11-xlib.dtm src/workspace.dt
 	dalec -c src/workspace.dt

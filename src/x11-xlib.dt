@@ -2,6 +2,7 @@
 
 (import macros)
 (import derivations)
+(import variant)
 
 (namespace x11
   (def Window      (macro extern (void) (q uint64)))
@@ -68,163 +69,137 @@
      (override-redirect int)
      (screen (p Screen)))))
 
-  (def ButtonEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (window (Window))
-     (root (Window))
-     (subwindow (Window))
-     (time (Time))
-     (x int)
-     (y int)
-     (x-root int)
-     (y-root int)
-     (state uint)
-     (button uint)
-     (same-screen int))))
+  (def padding (struct intern ((a (array-of 188 char)))))
 
-  (def EnterWindowEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (window (Window))
-     (root (Window))
-     (subwindow (Window))
-     (time (Time))
-     (x int)
-     (y int)
-     (x-root int)
-     (y-root int)
-     (mode int)
-     (detail int)
-     (same-screen int)
-     (focus int)
-     (state uint))))
-
-  (def KeyEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (window (Window))
-     (root (Window))
-     (subwindow (Window))
-     (time (Time))
-     (x int)
-     (y int)
-     (x-root int)
-     (y-root int)
-     (state uint)
-     (keycode uint)
-     (same-screen int))))
-
-  (def MotionEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (window (Window))
-     (root (Window))
-     (subwindow (Window))
-     (time (Time))
-     (x int)
-     (y int)
-     (x-root int)
-     (y-root int)
-     (state uint)
-     (is-hint char)
-     (same-screen int))))
-
-  (def CreateWindowEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (parent (Window))
-     (window (Window))
-     (x int)
-     (y int)
-     (width int)
-     (height int)
-     (border-width int)
-     (override-redirect int))))
-
-  (def DestroyWindowEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (event (Window))
-     (window (Window)))))
-
-  (def FocusChangeEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (window (Window))
-     (mode int)
-     (detail int))))
-
-  (def MapEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (event (Window))
-     (window (Window))
-     (override-redirect int))))
-
-  (def UnmapEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (event (Window))
-     (window (Window))
-     (from-configure int))))
-
-  (def MapRequestEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (event (Window))
-     (window (Window)))))
-
-  (def ConfigureEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (event (Window))
-     (window (Window))
-     (x int)
-     (y int)
-     (width int)
-     (height int)
-     (border-width int)
-     (above (Window))
-     (override-redirect int))))
-
-  (def ConfigureRequestEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (parent (Window))
-     (window (Window))
-     (x int)
-     (y int)
-     (width int)
-     (height int)
-     (border-width int)
-     (above (Window))
-     (detail int)
-     (value-mask (ValueMask)))))
+  (def-variant Event
+    (Unused1
+     Unused2
+     (KeyPressEvent ((serial uint64)
+                     (send-event int)
+                     (display (p Display))
+                     (window (Window))
+                     (root (Window))
+                     (subwindow (Window))
+                     (time (Time))
+                     (x int)
+                     (y int)
+                     (x-root int)
+                     (y-root int)
+                     (state uint)
+                     (keycode uint)
+                     (same-screen int)))
+     (KeyReleaseEvent ((serial uint64)
+                       (send-event int)
+                       (display (p Display))
+                       (window (Window))
+                       (root (Window))
+                       (subwindow (Window))
+                       (time (Time))
+                       (x int)
+                       (y int)
+                       (x-root int)
+                       (y-root int)
+                       (state uint)
+                       (keycode uint)
+                       (same-screen int)))
+     (ButtonPressEvent ((serial uint64)
+                        (send-event int)
+                        (display (p Display))
+                        (window (Window))
+                        (root (Window))
+                        (subwindow (Window))
+                        (time (Time))
+                        (x int)
+                        (y int)
+                        (x-root int)
+                        (y-root int)
+                        (state uint)
+                        (button uint)
+                        (same-screen int)))
+     (ButtonReleaseEvent ((serial uint64)
+                          (send-event int)
+                          (display (p Display))
+                          (window (Window))
+                          (root (Window))
+                          (subwindow (Window))
+                          (time (Time))
+                          (x int)
+                          (y int)
+                          (x-root int)
+                          (y-root int)
+                          (state uint)
+                          (button uint)
+                          (same-screen int)))
+     MotionNotify
+     (EnterWindowEvent ((serial uint64)
+                        (send-event int)
+                        (display (p Display))
+                        (window (Window))
+                        (root (Window))
+                        (subwindow (Window))
+                        (time (Time))
+                        (x int)
+                        (y int)
+                        (x-root int)
+                        (y-root int)
+                        (mode int)
+                        (detail int)
+                        (same-screen int)
+                        (focus int)
+                        (state uint)))
+     LeaveNotify
+     FocusIn
+     FocusOut
+     KeymapNotify
+     Expose
+     GraphicsExpose
+     NoExpose
+     VisibilityNotify
+     CreateNotify
+     (DestroyWindowEvent ((serial uint64)
+                          (send-event int)
+                          (display (p Display))
+                          (event (Window))
+                          (window (Window))))
+     UnmapNotify
+     (MapNotifyEvent ((serial uint64)
+                      (send-event int)
+                      (display (p Display))
+                      (event (Window))
+                      (window (Window))
+                      (override-redirect int)))
+     (MapRequestEvent ((serial uint64)
+                       (send-event int)
+                       (display (p Display))
+                       (event (Window))
+                       (window (Window))))
+     ReparentNotify
+     ConfigureNotifyEvent
+     (ConfigureRequestEvent ((serial uint64)
+                             (send-event int)
+                             (display (p Display))
+                             (parent (Window))
+                             (window (Window))
+                             (x int)
+                             (y int)
+                             (width int)
+                             (height int)
+                             (border-width int)
+                             (above (Window))
+                             (detail int)
+                             (value-mask (ValueMask))))
+     GravityNotify
+     ResizeRequest
+     CirculateNotify
+     CirculateRequest
+     PropertyNotify
+     SelectionClear
+     SelectionRequest
+     SelectionNotify
+     ColormapNotify
+     ClientMessage
+     MappingNotify
+     (GenericEvent ((padding padding)))))
 
   (def WindowChanges (struct extern
     ((x int)
@@ -234,13 +209,6 @@
      (border-width int)
      (sibling (Window))
      (stack-mode int))))
-
-  (def AnyEvent (struct extern
-    ((type int)
-     (serial uint64)
-     (send-event int)
-     (display (p Display))
-     (window (Window)))))
 
   (def ErrorEvent (struct extern
     ((type int)
@@ -259,11 +227,7 @@
      (window (Window))
      (message-type (Atom))
      (format int)
-     (data (array-of 5 uint64)))))
-
-  (def Event (struct extern
-    ((type int)
-     (_unused (array-of 188 char))))))
+     (data (array-of 5 uint64))))))
 
 (using-namespace x11
 

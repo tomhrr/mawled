@@ -3,6 +3,7 @@
 (import macros)
 (import derivations)
 (import variant)
+(import enum)
 (import bitset-enum)
 
 (namespace x11
@@ -36,21 +37,21 @@
      PropertyChangeMask ColormapChangeMask
      OwnerGrabButtonMask))
 
-  (def Detail (enum extern int
-    (Above Below TopIf BottomIf Opposite)))
+  (def-enum Detail extern int
+    (Above Below TopIf BottomIf Opposite))
 
   (def-bitset-enum CWValueMask extern uint64
     (CWUnused CWX CWY CWWidth CWHeight CWBorderWidth CWSibling CWStackMode))
 
-  (def RevertOption (enum extern int
+  (def-enum RevertOption extern int
     (RevertToNone
      RevertToPointerRoot
-     RevertToParent)))
+     RevertToParent))
 
-  (def WindowMapState (enum extern int
+  (def-enum WindowMapState extern int
     (IsUnmapped
      IsUnviewable
-     IsViewable)))
+     IsViewable))
 
   (def Screen (struct extern
     ((_unused (array-of 16 uint8))
@@ -106,6 +107,7 @@
      (screen (p Screen)))))
 
   (def padding (struct intern ((a (array-of 188 char)))))
+  (def client-message-data (struct intern ((a (array-of 5 uint64)))))
 
   (def-variant Event
     (Unused1
@@ -265,6 +267,7 @@
      (format int)
      (data (array-of 5 uint64))))))
 
+
 (using-namespace x11
 
 (def XOpenDisplay
@@ -412,12 +415,9 @@
   (def owner-events-true (var extern int    1))
   (def current-time      (var extern uint64 0))
 
-  (def enter-notify   (var extern int (cast (@: (EnterWindowEvent) type)
-                                            int)))
-  (def map-notify     (var extern int (cast (@: (MapNotifyEvent) type)
-                                            int)))
-  (def client-message (var extern int (cast (@: (ClientMessageEvent) type))
-                                            int))
+  (def enter-notify   (var extern int (value (@: (EnterWindowEvent) type))))
+  (def map-notify     (var extern int (value (@: (MapNotifyEvent) type))))
+  (def client-message (var extern int (value (@: (ClientMessage) type))))
 
   (def none              (var extern int 0))
   (def no-window         (var extern (Window) 0))

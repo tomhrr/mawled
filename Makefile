@@ -25,4 +25,4 @@ clean:
 	rm -f mawled && rm *.so && rm *.bc && rm *.dtm
 
 install:
-	install mawled $(bindir)/mawled -m 755
+	install -m 755 mawled $(bindir)/mawled

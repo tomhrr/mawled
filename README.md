@@ -6,7 +6,7 @@ for [Dale](https://github.com/tomhrr/dale).
 
 ### Dependencies
 
-  * Dale (built from the current master branch)
+  * Dale (>= 0.3)
   * X11 development libraries
 
 ### Install

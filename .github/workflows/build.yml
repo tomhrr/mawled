@@ -1,0 +1,10 @@
+name: build
+on: push
+jobs:
+  build-10:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v1
+      - run: sudo apt-get install build-essential llvm-10 llvm-10-dev clang-10 libedit-dev
+      - run: wget https://github.com/tomhrr/dale/archive/0.3.tar.gz && tar xf 0.3.tar.gz && cd dale-0.3 && cmake -DLLVM_CONFIG=/usr/bin/llvm-config-10 . && make && make tests && make install && cd ..
+      - run: make

@@ -46,3 +46,4 @@ the terminal command.  If it is not set, it defaults to `xterm`.
 ### Licence
 
 See LICENCE.
+

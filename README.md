@@ -1,6 +1,6 @@
 ## mawled
 
-[![Build Status](https://github.com/tomhrr/mawled/workflows/build/badge.svg?branch=master)](https://github.com/tomhrr/mawled/actions)
+[![Build Status](https://github.com/tomhrr/mawled/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/tomhrr/mawled/actions)
 
 mawled is a basic X11 tiling window manager, inspired by xmonad,
 though with fewer features.  It serves mainly as an example project
